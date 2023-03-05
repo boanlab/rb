@@ -61,4 +61,10 @@ If you want a synchronous test rather than sending multiple requests at once, do
 - Additional features under development
 
 ## Contributors
-- [Younghwan Kim](https://github.com/royroyee)
+[Younghwan Kim](https://github.com/royroyee)
+
+## Contributing
+This project is still under development and there are many areas that need improvement. Feedback and suggestions are always welcome through issues or pull requests
+
+## License
+[MIT License](https://github.com/boanlab/rb/blob/main/LICENSE)
