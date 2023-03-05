@@ -1,2 +1,4 @@
-# gohttperf
-A Simple HTTP benchmarking tool built with the Golang
+# rb
+A Simple REST API benchmarking tool
+
+## Introduction
