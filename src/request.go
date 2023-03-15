@@ -2,73 +2,157 @@ package main
 
 import (
 	"fmt"
-	"github.com/valyala/fasthttp"
+	"net/http"
 	"sync"
 	"time"
 )
 
-func request(url string, workers int, requestsPerWorker int, timeout time.Duration) {
-
-	httpClient := &fasthttp.Client{}
-
+func requestFixedPerWorker(url string, workers int, totalRequest int, timeout time.Duration) {
 	var wg sync.WaitGroup
+
+	if totalRequest%workers != 0 {
+		fmt.Println("Error: Total requests must be evenly divisible by the number of workers.")
+		return
+	}
+
+	httpClient := &http.Client{}
+
 	wg.Add(workers)
 
 	responses := make([][]response, workers) // slice of responses, one per worker
+	requestsPerWorker := totalRequest / workers
 
 	for i := 0; i < workers; i++ {
 		go func(workerNum int) {
 			defer wg.Done()
 
 			for j := 0; j < requestsPerWorker; j++ {
-				req := fasthttp.AcquireRequest()
-				req.SetRequestURI(url)
-
-				req.Header.SetMethod("GET")
-				resp := fasthttp.AcquireResponse()
-
-				startTime := time.Now()
-				err := httpClient.Do(req, resp)
-
-				if err != nil {
-					fmt.Println("Request failed: ", err)
-				} else {
-					responseTime := time.Since(startTime).Seconds() * 1000
-					responses[workerNum] = append(responses[workerNum], response{time: responseTime, status: resp.StatusCode()})
-				}
-
-				fasthttp.ReleaseRequest(req)
-				fasthttp.ReleaseResponse(resp) // avoid memory leak
+				sendRequest(httpClient, url, workerNum, responses)
 			}
 		}(i)
 	}
-
 	stop := time.NewTimer(timeout)
 
 	go func() {
 		<-stop.C
 		rt := getResponsesTimes(responses)
+		// print all statistics
+		printAll(rt, timeout, responses)
 
-		// print statistics
-		printStatistics(rt, timeout)
-
-		// print response time percentile
-		printPercentiles(rt)
-
-		// Print status code statistics
-		printStatusCodes(getResponseStatuses(responses))
 	}()
-
 	wg.Wait()
 
 	rt := getResponsesTimes(responses)
+	// print all statistics
+	printAll(rt, timeout, responses)
+}
 
-	// print statistics
-	printStatistics(rt, timeout)
+func requestSustained(url string, workers int, totalRequest int, timeout time.Duration) {
 
-	// print response time percentile
-	printPercentiles(rt)
+	var wg sync.WaitGroup
 
-	// Print status code statistics
-	printStatusCodes(getResponseStatuses(responses))
+	if totalRequest%workers != 0 {
+		fmt.Println("Error: Total requests must be evenly divisible by the number of workers.")
+		return
+	}
+
+	transport := &http.Transport{
+		IdleConnTimeout:     timeout, // to reuse connection
+		MaxIdleConnsPerHost: workers,
+	}
+
+	httpClient := &http.Client{
+		Transport: transport,
+	}
+
+	wg.Add(workers)
+
+	responses := make([][]response, workers) // slice of responses, one per worker
+	requestsPerWorker := totalRequest / workers
+
+	for i := 0; i < workers; i++ {
+		go func(workerNum int) {
+			defer wg.Done()
+
+			stop := time.NewTimer(timeout)
+
+			for {
+				select {
+				case <-stop.C:
+					return
+
+				default:
+					for j := 0; j < requestsPerWorker; j++ {
+						success := sendRequest(httpClient, url, workerNum, responses)
+						if !success {
+							continue
+						}
+					}
+				}
+			}
+		}(i)
+	}
+	stop := time.NewTimer(timeout)
+
+	go func() {
+		<-stop.C
+		rt := getResponsesTimes(responses)
+		// print all statistics
+		printAll(rt, timeout, responses)
+
+	}()
+	wg.Wait()
+}
+
+func requestConcurrently(url string, workers int, timeout time.Duration) {
+	var wg sync.WaitGroup
+
+	httpClient := &http.Client{}
+
+	wg.Add(workers)
+
+	responses := make([][]response, workers) // slice of responses, one per worker
+
+	for i := 0; i < workers; i++ {
+
+		go func(workerNum int) {
+			defer wg.Done()
+			sendRequest(httpClient, url, workerNum, responses)
+		}(i)
+	}
+	stop := time.NewTimer(timeout)
+
+	go func() {
+		<-stop.C
+		rt := getResponsesTimes(responses)
+		// print all statistics
+		printAll(rt, timeout, responses)
+
+	}()
+	wg.Wait()
+
+	rt := getResponsesTimes(responses)
+	// print all statistics
+	printAll(rt, timeout, responses)
+}
+
+// send Request to ENDPOINT
+func sendRequest(httpClient *http.Client, url string, workerNum int, responses [][]response) (result bool) {
+	req, err := http.NewRequest("GET", url, nil)
+
+	startTime := time.Now().UnixNano()
+	resp, err := httpClient.Do(req)
+	endTime := time.Now().UnixNano()
+
+	if err != nil {
+		fmt.Println("Request failed: ", err)
+		return false
+	} else {
+		responseTime := time.Duration(endTime-startTime) * time.Nanosecond
+		responses[workerNum] = append(responses[workerNum], response{time: responseTime.Seconds() * 1000, status: resp.StatusCode})
+		return false
+	}
+	resp.Body.Close()
+
+	return true
 }

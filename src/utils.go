@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+
 	"sort"
 	"time"
 )
@@ -35,6 +36,17 @@ func getResponseStatuses(responses [][]response) []int {
 	return responseStatuses
 }
 
+func printAll(rt []float64, timeout time.Duration, responses [][]response) {
+	printStatistics(rt, timeout)
+
+	// print response time percentile
+	printPercentiles(rt)
+
+	// Print status code statistics
+	printStatusCodes(getResponseStatuses(responses))
+
+}
+
 // helper function to count the status codes in the given slice
 func printStatusCodes(codes []int) {
 	statusCodes := make(map[int]int)
@@ -43,7 +55,7 @@ func printStatusCodes(codes []int) {
 	}
 	fmt.Println("Status code statistics")
 	for code, count := range statusCodes {
-		fmt.Printf("%d: %d\n", code, count)
+		fmt.Println(code, " : ", count)
 	}
 }
 
@@ -90,4 +102,5 @@ func getPercentile(data []float64, percentile float64) float64 {
 	sort.Float64s(data)
 	index := int(math.Ceil((percentile / 100) * float64(len(data))))
 	return data[index-1]
+
 }
