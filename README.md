@@ -13,11 +13,12 @@ go build
 
 ## Usage
 ```
-./rb -url=http://127.0.0.1:8080 -w=5 -r=1000 -t=500s
+./rb -url=http://127.0.0.1:8080  -type=f -w=100 -r=3000 -t=100s
 
-2023/03/05 18:28:35 Welcome to rb
-2023/03/05 18:28:35 Running Benchmark with url=http://127.0.0.1:8080, workers=5, requestsPerWorker=1000, timeout=8m20s
-Sent 5000 requests in 8m20s
+Welcome to rb
+Running Benchmark with type=requestFixedPerWorker url=http://127.0.0.1:8080, workers=100, total requests =3000, timeout=1m40s
+
+Sent 3000 requests in 1m40s
 Average request time: 18.6404 ms
 Request time standard deviation: 15.7672 ms
 Response Time Percentiles:
@@ -29,7 +30,8 @@ Response Time Percentiles:
  95% in 41.972 ms
  99% in 101.438 ms
 Status code statistics
-200: 5000
+200: 3000
+
 ```
 ## Features
 - Simulates multiple concurrent requests to the API endpoint
@@ -41,17 +43,34 @@ Status code statistics
 ## Command Line Options
 
 ```
-Options
-Note that all workers perform tasks in parallel
-If you want a synchronous test rather than sending multiple requests at once, do not create the -w option.
-  -r int
-        number of requests per worker (default 100)
-  -t duration
-        time out (default 1m0s)
-  -url string
-        target URL (default "http://localhost:8080")
-  -w int
-        number of workers (default 1)
+Usage rb : https://github.com/boanlab/rb  
+
+[Currently, rb does not support HTTP/3 and only supports the GET method]
+
+rb Options:
+
+  -url : request single url (default "http://localhost:8080")
+
+  -r :  number of total requests (default 100)
+          ex) -r=1000
+
+  -t : time out (default 1m0s)
+      ex) -60s
+
+  -w : number of workers (default 10)
+          ex) -w=100
+
+  -type : type of request
+        f : ensures that the total number of requests is evenly divisible by the number of workers
+        s : keeps the session alive and repeats assigned requests until the timeout is reached
+        c : sends concurrent requests from the specified number of workers within the given timeout
+        
+        ex) -type f
+---------------------------------------------------------------------------------------------------
+  cpus : number of used cpu cores.
+      (default for current machine is 8 cores)
+
+
 ```
 > Requests are sent in parallel according to the specified number of workers. Each worker performs the requested number of requests individually. Therefore, if you don't want to send multiple requests at the same time, you can simply omit the -w option (default worker = 1)
 
