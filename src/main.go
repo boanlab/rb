@@ -50,12 +50,10 @@ rb Options:
 
   -type : type of request
 	f : ensures that the total number of requests is evenly divisible by the number of workers
-	s : keeps the session alive and repeats assigned requests until the timeout is reached
-	c : sends concurrent requests from the specified number of workers within the given timeout
-	
-	ex) -type f
+	s : keeps the session alive and repeats assigned requests until the timeout is reached	
+	ex) -type=f
 
-  -disable-keepalive : Prevents reuse of TCP connections if enabled (default false)
+  -disable-keepalive : Prevents reuse of TCP connections  (default false)
 	ex) -disable-keepalive=true
 
 ---------------------------------------------------------------------------------------------------
@@ -86,6 +84,7 @@ func main() {
 
 	flag.Parse() // Parse command-line arguments
 
+	fmt.Println()
 	fmt.Println("Welcome to rb")
 
 	req, err := http.NewRequest("GET", *url, nil)
@@ -102,7 +101,7 @@ func main() {
 		DisableKeepAlives: *disableKeepAlives,
 	}
 
-	fmt.Printf("Running Benchmark with type=%s url=%s, workers=%d, total requests =%d, timeout=%s, disable-keep-alive=%t\n", c.requestType, *url, c.Workers, c.TotalRequests, c.Timeout, c.DisableKeepAlives)
+	fmt.Printf("Running Benchmark with type=%s url=%s, workers=%d, total requests =%d, timeout=%s", c.requestType, *url, c.Workers, c.TotalRequests, c.Timeout)
 	c.runRequest()
 	fmt.Println("-------------------------------------------------------------------------------------------------------")
 

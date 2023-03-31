@@ -92,6 +92,9 @@ func printStatusCodes(codes []int) {
 	for _, code := range codes {
 		statusCodes[code]++
 	}
+
+	fmt.Println()
+	fmt.Println()
 	fmt.Println("Status code statistics")
 	for code, count := range statusCodes {
 		fmt.Println(code, " : ", count)
@@ -116,6 +119,8 @@ func printStatistics(requestTimes []float64, timeout time.Duration) {
 	}
 	rtStdDev := fmt.Sprintf("%.4f", math.Sqrt(rtVariance/float64(requestCount)))
 
+	fmt.Println()
+	fmt.Println()
 	fmt.Println("Sent", requestCount, "requests in", timeout)
 	fmt.Println("Average request time:", fmt.Sprintf("%.4f", avgRequestTime), "ms")
 	fmt.Println("Request time standard deviation:", rtStdDev, "ms")
@@ -125,6 +130,8 @@ func printStatistics(requestTimes []float64, timeout time.Duration) {
 // print percentile statistics
 func printPercentiles(data []float64) {
 	percentiles := []float64{10, 25, 50, 75, 90, 95, 99}
+	fmt.Println()
+	fmt.Println()
 	fmt.Println("Response Time Percentiles:")
 	for _, percentile := range percentiles {
 		value := getPercentile(data, percentile)
@@ -190,6 +197,8 @@ func printHistogram(requestTimes []float64) {
 	}
 
 	// Print histogram
+	fmt.Println()
+	fmt.Println()
 	fmt.Println("Response time histogram:")
 	for i, binCount := range bins {
 		binStart := binBoundaries[i]
