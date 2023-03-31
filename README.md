@@ -17,7 +17,7 @@ $ ./rb -url=http://127.0.0.1:8080  -type=f -w=10 -r=1000 -t=60s
 
 Welcome to rb
 
-Running Benchmark with type=f url=http://serverhwan.shop:31111, workers=10, total requests =1000, timeout=1m0stotal 
+Running Benchmark with type=f url=http://127.0.0.1:8080, workers=10, total requests =1000, timeout=1m0stotal 
 
 
 Sent 1000 requests in 1m0s
