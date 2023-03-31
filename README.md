@@ -13,26 +13,45 @@ go build
 
 ## Usage
 ```
-./rb -url=http://127.0.0.1:8080  -type=f -w=100 -r=3000 -t=100s
+$ ./rb -url=http://127.0.0.1:8080  -type=f -w=10 -r=1000 -t=60s
 
 Welcome to rb
-Running Benchmark with type=requestFixedPerWorker url=http://127.0.0.1:8080, workers=100, total requests =3000, timeout=1m40s
 
-Sent 3000 requests in 1m40s
-Average request time: 18.6404 ms
-Request time standard deviation: 15.7672 ms
+Running Benchmark with type=f url=http://serverhwan.shop:31111, workers=10, total requests =1000, timeout=1m0stotal 
+
+time: 1.64 seconds
+Sent 1000 requests in 1m0s
+Average request time: 15.6467 ms
+Request time standard deviation: 4.1981 ms
+Response time histogram:
+8.991 - 10.751 ms [35] ▄▄
+10.751 - 12.511 ms [185] ▄▄▄▄▄▄▄▄▄
+12.511 - 14.271 ms [234] ▄▄▄▄▄▄▄▄▄▄▄▄
+14.271 - 16.030 ms [188] ▄▄▄▄▄▄▄▄▄
+16.030 - 17.790 ms [127] ▄▄▄▄▄▄
+17.790 - 19.550 ms [71] ▄▄▄▄
+19.550 - 21.310 ms [73] ▄▄▄▄
+21.310 - 23.070 ms [44] ▄▄
+23.070 - 24.830 ms [11] ▄
+24.830 - 26.590 ms [8] 
+26.590 - 28.350 ms [3] 
+28.350 - 30.109 ms [8] 
+30.109 - 31.869 ms [3] 
+31.869 - 35.552 ms [9] 
+35.552 - 35.758 ms [1] 
 Response Time Percentiles:
- 10% in 10.192 ms
- 25% in 11.130 ms
- 50% in 12.737 ms
- 75% in 18.205 ms
- 90% in 37.208 ms
- 95% in 41.972 ms
- 99% in 101.438 ms
+ 10% in 11.416 ms
+ 25% in 12.799 ms
+ 50% in 14.646 ms
+ 75% in 17.366 ms
+ 90% in 20.948 ms
+ 95% in 22.508 ms
+ 99% in 31.303 ms
 Status code statistics
-200: 3000
+200  :  1000
 
 ```
+
 ## Features
 - Simulates multiple concurrent requests to the API endpoint
 - Allows users to evaluate the performance of the system under different levels of load
@@ -44,7 +63,6 @@ Status code statistics
 
 ```
 Usage rb : https://github.com/boanlab/rb  
-
 [Currently, rb does not support HTTP/3 and only supports the GET method]
 
 rb Options:
@@ -52,32 +70,31 @@ rb Options:
   -url : request single url (default "http://localhost:8080")
 
   -r :  number of total requests (default 100)
-          ex) -r=1000
+	  ex) -r=1000
 
   -t : time out (default 1m0s)
       ex) -60s
 
   -w : number of workers (default 10)
-          ex) -w=100
+	  ex) -w=100
 
   -type : type of request
-        f : ensures that the total number of requests is evenly divisible by the number of workers
-        s : keeps the session alive and repeats assigned requests until the timeout is reached
-        c : sends concurrent requests from the specified number of workers within the given timeout
-        
-        ex) -type f
+	f : ensures that the total number of requests is evenly divisible by the number of workers
+	s : keeps the session alive and repeats assigned requests until the timeout is reached	
+	ex) -type=f
+
+  -disable-keepalive : Prevents reuse of TCP connections  (default false)
+	ex) -disable-keepalive=true
+
 ---------------------------------------------------------------------------------------------------
   cpus : number of used cpu cores.
-      (default for current machine is 8 cores)
+      (default for current machine is %d cores)
 
 
 ```
-> Requests are sent in parallel according to the specified number of workers. Each worker performs the requested number of requests individually. Therefore, if you don't want to send multiple requests at the same time, you can simply omit the -w option (default worker = 1)
+> Requests are sent in parallel according to the specified number of workers. Each worker performs the requested number of requests individually. Therefore, if you don't want to send multiple requests at the same time, you can simply use the -w=1
 
-## Development Roadmap
-- Add support for additional HTTP methods (currently only GET is supported)
-- Support for custom Request Body
-- Additional features under development
+
 
 ## Contributors
 [Younghwan Kim](https://github.com/royroyee)
