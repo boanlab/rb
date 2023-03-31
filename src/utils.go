@@ -23,48 +23,65 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math"
-
+	"os"
 	"sort"
+	"strings"
 	"time"
 )
 
-// define struct to hold response time and status code
-type response struct {
-	time   float64
-	status int
+// original code is from https://github.com/rakyll/hey
+func exitWithError(err string) {
+	if err != "" {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		fmt.Fprintln(os.Stderr)
+	}
+	flag.Usage()
+	fmt.Fprintln(os.Stderr)
+	os.Exit(1)
 }
 
 // helper function to flatten the responses slice of slice into a single slice
-func getResponsesTimes(responses [][]response) []float64 {
+func getResponsesTimes(responses [][]Response) []float64 {
 	var responseTimes []float64
 	for _, workerResponses := range responses {
 		for _, resp := range workerResponses {
-			responseTimes = append(responseTimes, resp.time)
+			responseTimes = append(responseTimes, resp.Time)
 		}
 	}
 	return responseTimes
 }
 
 // helper function to flatten the responseCodes slice of slice into a single slice
-func getResponseStatuses(responses [][]response) []int {
+func getResponseStatuses(responses [][]Response) []int {
 	var responseStatuses []int
 	for _, workerResponses := range responses {
 		for _, resp := range workerResponses {
-			responseStatuses = append(responseStatuses, resp.status)
+			responseStatuses = append(responseStatuses, resp.Status)
 		}
 	}
 	return responseStatuses
 }
 
-func printAll(rt []float64, timeout time.Duration, responses [][]response) {
+func printAll(responses [][]Response, timeout time.Duration, start time.Time) {
+
+	// total time
+	duration := time.Since(start)
+	fmt.Printf("total time: %.2f seconds\n", float64(duration)/float64(time.Second))
+
+	rt := getResponsesTimes(responses)
+
 	printStatistics(rt, timeout)
+
+	// print response time histogram
+	printHistogram(rt)
 
 	// print response time percentile
 	printPercentiles(rt)
 
-	// Print status code statistics
+	// print status code statistics
 	printStatusCodes(getResponseStatuses(responses))
 
 }
@@ -125,4 +142,63 @@ func getPercentile(data []float64, percentile float64) float64 {
 	index := int(math.Ceil((percentile / 100) * float64(len(data))))
 	return data[index-1]
 
+}
+
+func printHistogram(requestTimes []float64) {
+	numBins := 15
+	n := len(requestTimes)
+
+	// Sort the request times
+	sort.Float64s(requestTimes)
+
+	// Calculate the min and max
+	min := requestTimes[0]
+	max := requestTimes[n-1]
+
+	// TODO This method is not the most optimal solution so I'm currently exploring more efficient alternatives
+	// To prevent excessive distortion of the histogram caused by high values, the last two values are excluded from the bin boundaries.
+	secondMax := requestTimes[n-2]
+	thirdMax := requestTimes[n-3]
+
+	// Calculate the bin size based on the min and max
+	binSize := (thirdMax - min) / float64(numBins)
+
+	// Calculate the bin boundaries
+	binBoundaries := make([]float64, numBins+1)
+	for i := 0; i <= numBins-2; i++ {
+		binBoundaries[i] = min + float64(i)*binSize
+	}
+
+	// TODO This method is not the most optimal solution so I'm currently exploring more efficient alternatives
+	// To prevent excessive distortion of the histogram caused by high values, the last two values are excluded from the bin boundaries.
+	binBoundaries[numBins-1] = secondMax
+	binBoundaries[numBins] = max
+
+	// Create bins and count values in each bin
+	bins := make([]int, numBins)
+	binIndex := 0
+	for _, rt := range requestTimes {
+		if rt <= binBoundaries[binIndex+1] {
+			bins[binIndex]++
+		} else {
+			binIndex++
+			if binIndex >= numBins {
+				binIndex = numBins - 1
+			}
+			bins[binIndex]++
+		}
+	}
+
+	// Print histogram
+	fmt.Println("Response time histogram:")
+	for i, binCount := range bins {
+		binStart := binBoundaries[i]
+		binEnd := binBoundaries[i+1]
+
+		// Normalize the number of blocks to a maximum of 50
+		numBlocks := int(math.Round((float64(binCount) / float64(n)) * 50))
+
+		blocks := strings.Repeat("▄", numBlocks)
+		fmt.Printf("%.3f - %.3f ms [%d] %s\n", binStart, binEnd, binCount, blocks)
+	}
 }
