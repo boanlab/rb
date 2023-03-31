@@ -5,11 +5,16 @@
 This tool enables users to measure the speed and responsiveness of REST API requests, and conduct load testing on web servers. This is achieved by simulating multiple concurrent requests to the API endpoint, allowing users to evaluate the performance of the system under different levels of load.
 
 ## Installation
+
+1. If golang is installed in your environment
 ```
 git clone https://github.com/boanlab/rb.git
 cd rb/src
 go build
 ```
+2. Otherwise, use the binary file in the release
+> For Mac, you need to unlock the security and privacy settings and give execute permission to the rb file using the chmod +x command.
+
 
 ## Usage
 ```
