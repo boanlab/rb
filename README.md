@@ -19,36 +19,43 @@ Welcome to rb
 
 Running Benchmark with type=f url=http://serverhwan.shop:31111, workers=10, total requests =1000, timeout=1m0stotal 
 
-time: 1.64 seconds
+
 Sent 1000 requests in 1m0s
-Average request time: 15.6467 ms
-Request time standard deviation: 4.1981 ms
+Average request time: 15.8309 ms
+Request time standard deviation: 4.9787 ms
+
+
 Response time histogram:
-8.991 - 10.751 ms [35] ▄▄
-10.751 - 12.511 ms [185] ▄▄▄▄▄▄▄▄▄
-12.511 - 14.271 ms [234] ▄▄▄▄▄▄▄▄▄▄▄▄
-14.271 - 16.030 ms [188] ▄▄▄▄▄▄▄▄▄
-16.030 - 17.790 ms [127] ▄▄▄▄▄▄
-17.790 - 19.550 ms [71] ▄▄▄▄
-19.550 - 21.310 ms [73] ▄▄▄▄
-21.310 - 23.070 ms [44] ▄▄
-23.070 - 24.830 ms [11] ▄
-24.830 - 26.590 ms [8] 
-26.590 - 28.350 ms [3] 
-28.350 - 30.109 ms [8] 
-30.109 - 31.869 ms [3] 
-31.869 - 35.552 ms [9] 
-35.552 - 35.758 ms [1] 
+9.239 - 11.849 ms [149] ▄▄▄▄▄▄▄
+11.849 - 14.460 ms [338] ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+14.460 - 17.070 ms [196] ▄▄▄▄▄▄▄▄▄▄
+17.070 - 19.680 ms [171] ▄▄▄▄▄▄▄▄▄
+19.680 - 22.290 ms [78] ▄▄▄▄
+22.290 - 24.901 ms [32] ▄▄
+24.901 - 27.511 ms [11] ▄
+27.511 - 30.121 ms [15] ▄
+30.121 - 32.731 ms [1] 
+32.731 - 35.342 ms [1] 
+35.342 - 37.952 ms [1] 
+37.952 - 40.562 ms [1] 
+40.562 - 43.172 ms [1] 
+43.172 - 48.396 ms [4] 
+48.396 - 48.406 ms [1] 
+
+
 Response Time Percentiles:
- 10% in 11.416 ms
- 25% in 12.799 ms
- 50% in 14.646 ms
- 75% in 17.366 ms
- 90% in 20.948 ms
- 95% in 22.508 ms
- 99% in 31.303 ms
+ 10% in 11.456 ms
+ 25% in 12.709 ms
+ 50% in 14.592 ms
+ 75% in 17.980 ms
+ 90% in 20.993 ms
+ 95% in 22.929 ms
+ 99% in 28.925 ms
+
+
 Status code statistics
 200  :  1000
+
 
 ```
 
