@@ -25,6 +25,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"runtime"
 	"time"
@@ -49,15 +50,28 @@ rb Options:
 
   -type : type of request
 	f : ensures that the total number of requests is evenly divisible by the number of workers
-	s : keeps the session alive and repeats assigned requests until the timeout is reached
-	c : sends concurrent requests from the specified number of workers within the given timeout
-	
-	ex) -type f
+	s : keeps the session alive and repeats assigned requests until the timeout is reached	
+	ex) -type=f
+
+  -disable-keepalive : Prevents reuse of TCP connections  (default false)
+	ex) -disable-keepalive=true
+
 ---------------------------------------------------------------------------------------------------
   cpus : number of used cpu cores.
       (default for current machine is %d cores)
 
 `
+
+// Parse command-line arguments
+var (
+	url          = flag.String("url", "http://localhost:8080", "target URL")
+	workers      = flag.Int("w", 10, "number of workers")
+	totalRequest = flag.Int("r", 100, "number of requests per worker")
+	timeout      = flag.Duration("t", 60*time.Second, "time out")
+	requestType  = flag.String("type", "f", "type of request (-f / -s")
+
+	disableKeepAlives = flag.Bool("disable-keepalive", false, "choose whether or not to enable the keep-alive feature")
+)
 
 func main() {
 
@@ -68,41 +82,27 @@ func main() {
 		fmt.Fprint(os.Stderr, fmt.Sprintf(usage, runtime.NumCPU()))
 	}
 
-	// Parse command-line arguments
-	var (
-		url          = flag.String("url", "http://localhost:8080", "target URL")
-		workers      = flag.Int("w", 10, "number of workers")
-		totalRequest = flag.Int("r", 100, "number of requests per worker")
-		timeout      = flag.Duration("t", 60*time.Second, "time out")
-		requestType  = flag.String("type", "f", "type of request (-f / -s / -c)")
-	)
+	flag.Parse() // Parse command-line arguments
 
-	// Assign custom usage message
-
-	flag.Parse()
-
+	fmt.Println()
 	fmt.Println("Welcome to rb")
 
-	switch *requestType {
-	case "f":
-		fmt.Printf("Running Benchmark with type=requestFixedPerWorker url=%s, workers=%d, total requests =%d, timeout=%s\n", *url, *workers, *totalRequest, *timeout)
-		fmt.Println("-------------------------------------------------------------------------------------------------------")
-		requestFixedPerWorker(*url, *workers, *totalRequest, *timeout)
-
-	case "s":
-		fmt.Printf("Running Benchmark with type=requestSustained url=%s, workers=%d, total requests =%d, timeout=%s\n", *url, *workers, *totalRequest, *timeout)
-		fmt.Println("-------------------------------------------------------------------------------------------------------")
-		requestSustained(*url, *workers, *totalRequest, *timeout)
-
-	case "c":
-		fmt.Printf("Running Benchmark with type=requestConcurrently url=%s, workers=%d, total requests =%d, timeout=%s\n", *url, *workers, *timeout)
-		fmt.Println("-------------------------------------------------------------------------------------------------------")
-		requestConcurrently(*url, *workers, *timeout)
-
-	default:
-		fmt.Println("Invalid request type. Please use 'f' or 's' or 'c'")
-		flag.Usage()
-		os.Exit(1)
+	req, err := http.NewRequest("GET", *url, nil)
+	if err != nil {
+		exitWithError(err.Error())
 	}
+
+	c := &Request{
+		requestType:       *requestType,
+		HttpRequest:       req,
+		Workers:           *workers,
+		TotalRequests:     *totalRequest,
+		Timeout:           *timeout,
+		DisableKeepAlives: *disableKeepAlives,
+	}
+
+	fmt.Printf("Running Benchmark with type=%s url=%s, workers=%d, total requests =%d, timeout=%s", c.requestType, *url, c.Workers, c.TotalRequests, c.Timeout)
+	c.runRequest()
+	fmt.Println("-------------------------------------------------------------------------------------------------------")
 
 }

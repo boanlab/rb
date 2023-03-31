@@ -23,144 +23,124 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
 
-func requestFixedPerWorker(url string, workers int, totalRequest int, timeout time.Duration) {
-	var wg sync.WaitGroup
+func (c Request) runRequest() {
 
-	if totalRequest%workers != 0 {
-		fmt.Println("Error: Total requests must be evenly divisible by the number of workers.")
-		return
-	}
-
-	httpClient := &http.Client{}
-
-	wg.Add(workers)
-
-	responses := make([][]response, workers) // slice of responses, one per worker
-	requestsPerWorker := totalRequest / workers
-
-	for i := 0; i < workers; i++ {
-		go func(workerNum int) {
-			defer wg.Done()
-
-			for j := 0; j < requestsPerWorker; j++ {
-				sendRequest(httpClient, url, workerNum, responses)
-			}
-		}(i)
-	}
-	stop := time.NewTimer(timeout)
-
-	go func() {
-		<-stop.C
-		rt := getResponsesTimes(responses)
-		// print all statistics
-		printAll(rt, timeout, responses)
-
-	}()
-	wg.Wait()
-
-	rt := getResponsesTimes(responses)
-	// print all statistics
-	printAll(rt, timeout, responses)
-}
-
-func requestSustained(url string, workers int, totalRequest int, timeout time.Duration) {
-
-	var wg sync.WaitGroup
-
-	if totalRequest%workers != 0 {
+	if (c.TotalRequests % c.Workers) != 0 {
 		fmt.Println("Error: Total requests must be evenly divisible by the number of workers.")
 		return
 	}
 
 	transport := &http.Transport{
-		IdleConnTimeout:     timeout, // to reuse connection
-		MaxIdleConnsPerHost: workers,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+			ServerName:         c.HttpRequest.Host,
+		},
+		MaxIdleConnsPerHost: c.Workers,
+		DisableKeepAlives:   c.DisableKeepAlives,
 	}
 
 	httpClient := &http.Client{
 		Transport: transport,
+		Timeout:   c.Timeout,
 	}
 
-	wg.Add(workers)
+	responses := make([][]Response, c.Workers) // slice of responses, one per worker
 
-	responses := make([][]response, workers) // slice of responses, one per worker
-	requestsPerWorker := totalRequest / workers
+	if c.requestType == "f" {
+		c.requestFixedPerWorker(httpClient, responses)
+	} else { // requestType == "s"
+		c.requestSustained(httpClient, responses)
+	}
+}
 
-	for i := 0; i < workers; i++ {
+func (c Request) requestFixedPerWorker(httpClient *http.Client, responses [][]Response) {
+
+	var wg sync.WaitGroup
+
+	wg.Add(c.Workers)
+
+	start := time.Now() // Purpose of measuring the total time taken to send a request.
+
+	requestsPerWorker := c.TotalRequests / c.Workers
+
+	for i := 0; i < c.Workers; i++ {
 		go func(workerNum int) {
 			defer wg.Done()
 
-			stop := time.NewTimer(timeout)
+			for j := 0; j < requestsPerWorker; j++ {
+				c.sendRequest(c.HttpRequest, httpClient, workerNum, responses)
+
+			}
+		}(i)
+	}
+	stop := time.NewTimer(c.Timeout)
+
+	go func() {
+		<-stop.C
+		// print all statistics
+		printAll(responses, c.Timeout, start)
+
+	}()
+	wg.Wait()
+
+	// print all statistics
+	printAll(responses, c.Timeout, start)
+}
+
+func (c Request) requestSustained(httpClient *http.Client, responses [][]Response) {
+
+	var wg sync.WaitGroup
+
+	wg.Add(c.Workers)
+
+	start := time.Now() // Purpose of measuring the total time taken to send a request.
+
+	requestsPerWorker := c.TotalRequests / c.Workers
+
+	for i := 0; i < c.Workers; i++ {
+		go func(workerNum int) {
+			defer wg.Done()
+			stop := time.NewTimer(c.Timeout)
 
 			for {
 				select {
 				case <-stop.C:
+					// print all statistics
+					printAll(responses, c.Timeout, start)
+					os.Exit(1)
 					return
 
 				default:
 					for j := 0; j < requestsPerWorker; j++ {
-						success := sendRequest(httpClient, url, workerNum, responses)
-						if !success {
-							continue
-						}
+						c.sendRequest(c.HttpRequest, httpClient, workerNum, responses)
 					}
 				}
 			}
 		}(i)
 	}
-	stop := time.NewTimer(timeout)
+	stop := time.NewTimer(c.Timeout)
 
 	go func() {
 		<-stop.C
-		rt := getResponsesTimes(responses)
 		// print all statistics
-		printAll(rt, timeout, responses)
+		printAll(responses, c.Timeout, start)
+		os.Exit(1)
 
 	}()
 	wg.Wait()
-}
-
-func requestConcurrently(url string, workers int, timeout time.Duration) {
-	var wg sync.WaitGroup
-
-	httpClient := &http.Client{}
-
-	wg.Add(workers)
-
-	responses := make([][]response, workers) // slice of responses, one per worker
-
-	for i := 0; i < workers; i++ {
-
-		go func(workerNum int) {
-			defer wg.Done()
-			sendRequest(httpClient, url, workerNum, responses)
-		}(i)
-	}
-	stop := time.NewTimer(timeout)
-
-	go func() {
-		<-stop.C
-		rt := getResponsesTimes(responses)
-		// print all statistics
-		printAll(rt, timeout, responses)
-
-	}()
-	wg.Wait()
-
-	rt := getResponsesTimes(responses)
-	// print all statistics
-	printAll(rt, timeout, responses)
 }
 
 // send Request to ENDPOINT
-func sendRequest(httpClient *http.Client, url string, workerNum int, responses [][]response) (result bool) {
-	req, err := http.NewRequest("GET", url, nil)
+func (c Request) sendRequest(req *http.Request, httpClient *http.Client, workerNum int, responses [][]Response) {
 
 	startTime := time.Now().UnixNano()
 	resp, err := httpClient.Do(req)
@@ -168,13 +148,10 @@ func sendRequest(httpClient *http.Client, url string, workerNum int, responses [
 
 	if err != nil {
 		fmt.Println("Request failed: ", err)
-		return false
-	} else {
-		responseTime := time.Duration(endTime-startTime) * time.Nanosecond
-		responses[workerNum] = append(responses[workerNum], response{time: responseTime.Seconds() * 1000, status: resp.StatusCode})
-		return false
 	}
-	resp.Body.Close()
+	responseTime := time.Duration(endTime-startTime) * time.Nanosecond
+	responses[workerNum] = append(responses[workerNum], Response{Time: responseTime.Seconds() * 1000, Status: resp.StatusCode})
 
-	return true
+	io.Copy(io.Discard, resp.Body) // to read the response body and discard it directly without copying the data to disk.
+	resp.Body.Close()
 }
