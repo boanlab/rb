@@ -12,13 +12,25 @@ git clone https://github.com/boanlab/rb.git
 cd rb/src
 go build
 ```
-2. Otherwise, use the binary file in the release
+2. Homebrew
+```
+brew tap boanlab/rb
+brew install rb
+```
+After installation is complete, you can run the rb command to execute it. 
+For example, you can run it like this:
+```
+rb -url=https://example.com -w=10 -r=1000
+```
+
+3. Otherwise, use the binary file in the release
 > For Mac, you need to unlock the security and privacy settings and give execute permission to the rb file using the chmod +x command.
+
 
 
 ## Usage
 ```
-$ ./rb -url=http://127.0.0.1:8080  -type=f -w=10 -r=1000 -t=60s
+$ ./rb -url=http://127.0.0.1:8080  -type=f -w=10 -r=1000 -t=60s  ## If you have installed it via homebrew, the command to execute it would be just "rb" instead of "./rb".
 
 Welcome to rb
 
