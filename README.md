@@ -6,13 +6,15 @@ This tool enables users to measure the speed and responsiveness of REST API requ
 
 ## Installation
 
-1. If golang is installed in your environment
+### 1. If golang is installed in your environment
 ```
 git clone https://github.com/boanlab/rb.git
 cd rb/src
 go build
 ```
-2. Homebrew
+### 2. Homebrew
+Currently investigating an issue where the installation occasionally fails to complete.
+
 ```
 brew tap boanlab/rb
 brew install rb
@@ -23,9 +25,16 @@ For example, you can run it like this:
 rb -url=https://example.com -w=10 -r=1000
 ```
 
-3. Otherwise, use the binary file in the release
-> For Mac, you need to unlock the security and privacy settings and give execute permission to the rb file using the chmod +x command.
+### 3. Otherwise, use the binary file in the release
 
+#### 3.1 Linux
+```
+wget https://github.com/boanlab/rb/releases/download/v0.0.2/rb_linux_amd64
+mv rb_linux_amd64 rb
+chmod +x rb
+
+./rb -url=http://example.com -w=10 -r=100
+```
 
 
 ## Usage
