@@ -69,6 +69,8 @@ func printAll(responses [][]Response, timeout time.Duration, start time.Time) {
 
 	// total time
 	duration := time.Since(start)
+	fmt.Println()
+	fmt.Println()
 	fmt.Printf("total time: %.2f seconds\n", float64(duration)/float64(time.Second))
 
 	rt := getResponsesTimes(responses)
